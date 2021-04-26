@@ -24,7 +24,7 @@ namespace StonkMarket
             InitializeComponent();
             Setup();
         }
-
+        
         public void Setup()
         {
             var mapper = Mappers.Xy<MeasureModel>()
@@ -110,7 +110,7 @@ namespace StonkMarket
                 }
                 else
                 {
-                    stonkChange += (newFollowers - followers) * 0.75;
+                    stonkChange += (newFollowers - followers);
                 }
 
                 followers = newFollowers;
@@ -172,8 +172,25 @@ namespace StonkMarket
                 chats = lines.Length;
             }*/
 
+            // Randomizer (randomize stonkchange so its not a straight line)
+            if (stonkChange == 0)
+            {
+                Random r = new Random();
+                int num = r.Next(0, 10);
+                if (num > 4)
+                {
+                    stonkChange += double.Parse($"0.00{r.Next(0, 10)}");
+                }
+                else
+                {
+                    stonkChange -= double.Parse($"0.00{r.Next(0, 10)}");
+                }
+            }
+            
+            
             // Update stonk price with changes
             stonkPrice += stonkChange;
+            label1.Text = "$" + stonkPrice.ToString("0.###");
             stonkChange = 0;
         }
 
