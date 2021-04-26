@@ -33,7 +33,7 @@
             // 
             // cartesianChart1
             // 
-            this.cartesianChart1.Location = new System.Drawing.Point(38, 34);
+            this.cartesianChart1.Location = new System.Drawing.Point(39, 55);
             this.cartesianChart1.Name = "cartesianChart1";
             this.cartesianChart1.Size = new System.Drawing.Size(614, 371);
             this.cartesianChart1.TabIndex = 0;

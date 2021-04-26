@@ -1,13 +1,24 @@
-﻿using System;
+﻿/* Stonk Widget for Twitch/OBS
+ * Author: Nixka
+ * Date: 26/04/2021 */
+using System;
 using LiveCharts;
 using LiveCharts.Configurations;
 using LiveCharts.Wpf;
 using System.Windows.Forms;
+using System.IO;
+using System.Text;
 
 namespace StonkMarket
 {
     public partial class Form1 : Form
     {
+        private double stonkChange = 0;
+        private double stonkPrice = 1;
+        private int viewers = 0;
+        private double followers = 0;
+        private double subcount = 0;
+        private int chats = 0;
         public Form1()
         {
             InitializeComponent();
@@ -55,13 +66,16 @@ namespace StonkMarket
                 }
             });
 
+            // Get Initial Values
+            followers = double.Parse(File.ReadAllText("C:/Users/Nika/Desktop/Twitch Stuff/Labels/total_follower_count.txt"));
+            subcount = int.Parse(File.ReadAllText("C:/Users/Nika/Desktop/Twitch Stuff/Labels/total_subscriber_count.txt"));
 
             SetAxisLimits(DateTime.Now);
 
             //The next code simulates data changes every 500 ms
             Timer = new Timer
             {
-                Interval = 500
+                Interval = 1000
             };
             Timer.Tick += TimerOnTick;
             R = new Random();
@@ -75,7 +89,92 @@ namespace StonkMarket
         private void SetAxisLimits(DateTime now)
         {
             cartesianChart1.AxisX[0].MaxValue = now.Ticks + TimeSpan.FromSeconds(1).Ticks; // lets force the axis to be 100ms ahead
-            cartesianChart1.AxisX[0].MinValue = now.Ticks - TimeSpan.FromSeconds(8).Ticks; // we only care about the last 8 seconds
+            cartesianChart1.AxisX[0].MinValue = now.Ticks - TimeSpan.FromSeconds(30).Ticks; // we only care about the last 8 seconds
+        }
+
+        private void UpdateStonks()
+        {
+            /// Method to update stonks
+
+            // Followers and Subs
+            // Get follower and sub count
+            double newFollowers = double.Parse(File.ReadAllText("C:/Users/Nika/Desktop/Twitch Stuff/Labels/total_follower_count.txt"));
+            double newSubcount = double.Parse(File.ReadAllText("C:/Users/Nika/Desktop/Twitch Stuff/Labels/total_subscriber_count.txt"));
+
+            // Apply changes according 
+            if (newFollowers != followers)
+            {
+                if (newFollowers > followers)
+                {
+                    stonkChange += newFollowers - followers;
+                }
+                else
+                {
+                    stonkChange += (newFollowers - followers) * 0.75;
+                }
+
+                followers = newFollowers;
+            }
+            else if (newSubcount != subcount)
+            {
+                if (newSubcount > subcount)
+                {
+                    stonkChange += (newSubcount - subcount) * 10;
+                }
+
+                subcount = newSubcount;
+            }
+
+            // Viewers and Chat
+            // Get chat logs
+            using (var fs = new FileStream("C:/Users/Nika/Desktop/Twitch Stuff/StonkMarket/Data/#nixka.log", FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (var sr = new StreamReader(fs, Encoding.Default))
+            {
+                int i = 0;
+                string line;
+                while ((line = sr.ReadLine()) != null)
+                {
+                    if (line.Contains("VIEWERS"))
+                    {
+                        int newViewers = int.Parse(line.Split(':')[2].Substring(1));
+                        if (newViewers > viewers)
+                        {
+                            stonkChange += (newViewers - viewers) * 0.2;
+                        }
+                    }
+                    else 
+                    { 
+                        i++;
+                    }
+                }
+                if (i > chats)
+                {
+                    stonkChange += (i- chats) * 0.01;
+                    chats = i;
+                }
+            }
+            /*
+            string[] lines = File.ReadAllLines("C:/Users/Nika/Desktop/Twitch Stuff/StonkMarket/Data/#nixka.log");
+            foreach (string line in lines)
+            {
+                if (line.Contains("VIEWERS"))
+                {
+                    int newViewers = int.Parse(line.Split(':')[2].Substring(1));
+                    if (newViewers > viewers)
+                    {
+                        stonkChange += (newViewers - viewers) * 0.2;
+                    }
+                }
+            }
+            if (lines.Length > chats)
+            {
+                stonkChange += (lines.Length - chats) * 0.01;
+                chats = lines.Length;
+            }*/
+
+            // Update stonk price with changes
+            stonkPrice += stonkChange;
+            stonkChange = 0;
         }
 
         private void TimerOnTick(object sender, EventArgs eventArgs)
@@ -85,13 +184,14 @@ namespace StonkMarket
             ChartValues.Add(new MeasureModel
             {
                 DateTime = now,
-                Value = R.Next(0, 10)
+                Value = stonkPrice
             });
 
             SetAxisLimits(now);
-
-            //lets only use the last 30 values
-            if (ChartValues.Count > 30) ChartValues.RemoveAt(0);
+            UpdateStonks();
+            
+            // lets only use the last 30 values
+            if (ChartValues.Count > 90) ChartValues.RemoveAt(0);
         }
     }
 }
