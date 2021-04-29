@@ -19,6 +19,8 @@ namespace StonkMarket
         private double followers = 0;
         private double subcount = 0;
         private int chats = 0;
+        private double tips = 0;
+        private double bits = 0;
         public Form1()
         {
             InitializeComponent();
@@ -43,7 +45,7 @@ namespace StonkMarket
                     Values = ChartValues,
                     PointGeometrySize = 0,
                     StrokeThickness = 5,
-                    LineSmoothness = 0,
+                    LineSmoothness = 0.1,
                     Fill = System.Windows.Media.Brushes.Transparent,
                     Stroke = System.Windows.Media.Brushes.White
                 }
@@ -67,6 +69,8 @@ namespace StonkMarket
             });
 
             // Get Initial Values
+            bits = double.Parse(File.ReadAllText("C:/Users/Nika/Desktop/Twitch Stuff/Labels/total_cheer_amount.txt"));
+            tips = double.Parse(File.ReadAllText("C:/Users/Nika/Desktop/Twitch Stuff/Labels/total_donation_amount.txt").Split('$')[1]);
             followers = double.Parse(File.ReadAllText("C:/Users/Nika/Desktop/Twitch Stuff/Labels/total_follower_count.txt"));
             subcount = int.Parse(File.ReadAllText("C:/Users/Nika/Desktop/Twitch Stuff/Labels/total_subscriber_count.txt"));
 
@@ -88,18 +92,22 @@ namespace StonkMarket
 
         private void SetAxisLimits(DateTime now)
         {
-            cartesianChart1.AxisX[0].MaxValue = now.Ticks + TimeSpan.FromSeconds(1).Ticks; // lets force the axis to be 100ms ahead
-            cartesianChart1.AxisX[0].MinValue = now.Ticks - TimeSpan.FromSeconds(30).Ticks; // we only care about the last 8 seconds
+            //cartesianChart1.AxisX[0].MaxValue = now.Ticks + TimeSpan.FromSeconds(10).Ticks; // lets force the axis to be 100ms ahead
+            cartesianChart1.AxisX[0].MinValue = now.Ticks - TimeSpan.FromSeconds(60).Ticks; // we only care about the last 30 seconds
         }
 
         private void UpdateStonks()
         {
-            /// Method to update stonks
+            /*
+             * Method to update stonks
+             */
 
             // Followers and Subs
             // Get follower and sub count
             double newFollowers = double.Parse(File.ReadAllText("C:/Users/Nika/Desktop/Twitch Stuff/Labels/total_follower_count.txt"));
             double newSubcount = double.Parse(File.ReadAllText("C:/Users/Nika/Desktop/Twitch Stuff/Labels/total_subscriber_count.txt"));
+            double newBits = double.Parse(File.ReadAllText("C:/Users/Nika/Desktop/Twitch Stuff/Labels/total_cheer_amount.txt"));
+            double newTips = double.Parse(File.ReadAllText("C:/Users/Nika/Desktop/Twitch Stuff/Labels/total_donation_amount.txt").Split('$')[1]);
 
             // Apply changes according 
             if (newFollowers != followers)
@@ -115,14 +123,24 @@ namespace StonkMarket
 
                 followers = newFollowers;
             }
-            else if (newSubcount != subcount)
+            if (newSubcount != subcount)
             {
                 if (newSubcount > subcount)
                 {
-                    stonkChange += (newSubcount - subcount) * 10;
+                    stonkChange += (newSubcount - subcount) * 5;
                 }
 
                 subcount = newSubcount;
+            }
+            if (newBits > bits)
+            {
+                stonkChange += (newBits - bits) / 50;
+                bits = newBits;
+            }
+            if (newTips > tips)
+            {
+                stonkChange += (newTips - tips) * 2;
+                tips = newTips;
             }
 
             // Viewers and Chat
@@ -153,7 +171,9 @@ namespace StonkMarket
                     chats = i;
                 }
             }
-            /*
+            /* 
+             * CANT USE THIS METHOD WHEN TEXT FILE BEING USED BY OTHER PROCESS
+             * 
             string[] lines = File.ReadAllLines("C:/Users/Nika/Desktop/Twitch Stuff/StonkMarket/Data/#nixka.log");
             foreach (string line in lines)
             {
@@ -190,7 +210,7 @@ namespace StonkMarket
             
             // Update stonk price with changes
             stonkPrice += stonkChange;
-            label1.Text = "$" + stonkPrice.ToString("0.###");
+            label1.Text = "$" + stonkPrice.ToString("0.00");
             stonkChange = 0;
         }
 
